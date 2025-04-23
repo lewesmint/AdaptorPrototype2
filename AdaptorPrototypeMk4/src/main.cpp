@@ -1,6 +1,7 @@
-#include <windows.h>
+// Include winsock2.h before windows.h to avoid conflicts
 #include <winsock2.h>
 #include <ws2tcpip.h>
+#include <windows.h>
 #include <iostream>
 #include <csignal>
 #include <string>

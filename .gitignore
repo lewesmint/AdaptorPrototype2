@@ -4,6 +4,12 @@ Debug/
 Release/
 x64/
 Win32/
+[Bb]in/
+[Oo]bj/
+[Ll]og/
+[Ll]ogs/
+
+# Build results
 *.exe
 *.dll
 *.lib
@@ -11,11 +17,26 @@ Win32/
 *.ilk
 *.obj
 *.o
+*.iobj
+*.ipdb
+*.tlog
+*.log
+*.lastbuildstate
+*.recipe
+*.idb
+*.res
 
 # CMake generated files
 CMakeFiles/
 CMakeCache.txt
 cmake_install.cmake
+CMakeScripts/
+CTestTestfile.cmake
+CPackConfig.cmake
+CPackSourceConfig.cmake
+_deps/
+
+# Visual Studio project files
 *.vcxproj
 *.vcxproj.filters
 *.vcxproj.user
@@ -26,6 +47,26 @@ cmake_install.cmake
 .vscode/
 *.swp
 *~
+
+# Visual Studio specific files
+*.suo
+*.user
+*.userosscache
+*.sdf
+*.opensdf
+*.VC.db
+*.VC.VC.opendb
+ipch/
+*.aps
+*.ncb
+*.opendb
+*.cachefile
+*.VC.db
+*.VC.VC.opendb
+*.psess
+*.vsp
+*.vspx
+*.sap
 
 # OS generated files
 .DS_Store

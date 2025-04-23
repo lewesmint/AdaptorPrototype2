@@ -11,7 +11,8 @@ include_directories(include src)
 
 # Define WIN32_LEAN_AND_MEAN to avoid Windows.h conflicts
 # Define _CRT_SECURE_NO_WARNINGS to suppress warnings about deprecated C runtime functions
-add_definitions(-DWIN32_LEAN_AND_MEAN -D_CRT_SECURE_NO_WARNINGS)
+# Define _WINSOCK_DEPRECATED_NO_WARNINGS to suppress warnings about deprecated Winsock functions
+add_definitions(-DWIN32_LEAN_AND_MEAN -D_CRT_SECURE_NO_WARNINGS -D_WINSOCK_DEPRECATED_NO_WARNINGS)
 
 # Source files for the main executable
 set(SOURCES

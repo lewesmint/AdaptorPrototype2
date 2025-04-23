@@ -1,3 +1,8 @@
+// Make sure winsock2.h is included before windows.h to avoid conflicts
+#define WIN32_LEAN_AND_MEAN
+#include <winsock2.h>
+#include <windows.h>
+
 #include "change_tracking.h"
 #include "sync_message.h"
 #include "network_sync.h"
@@ -83,12 +88,12 @@ uint64_t generateUniqueId() {
     // Generate a unique ID based on time and a random component
     static uint64_t lastId = 0;
     uint64_t newId = (uint64_t)GetTickCount64() << 32 | (rand() & 0xFFFFFFFF);
-    
+
     // Ensure it's different from the last one
     if (newId == lastId) {
         newId++;
     }
-    
+
     lastId = newId;
     return newId;
 }
@@ -96,7 +101,7 @@ uint64_t generateUniqueId() {
 void checkUpdateTimeouts() {
     uint64_t currentTime = GetTickCount64();
     std::vector<uint64_t> timeoutIds;
-    
+
     // Find updates that have timed out
     lockUpdatesMutex();
     std::map<uint64_t, UpdateInfo>::iterator it;
@@ -105,7 +110,7 @@ void checkUpdateTimeouts() {
             timeoutIds.push_back(it->first);
         }
     }
-    
+
     // Remove timed-out updates
     for (size_t i = 0; i < timeoutIds.size(); i++) {
         std::cerr << "Update " << timeoutIds[i] << " timed out and was discarded" << std::endl;
@@ -120,10 +125,10 @@ void applyUpdate(const SyncMessage& message) {
     if (sharedMem) {
         // Calculate the target address
         char* target = static_cast<char*>(sharedMem) + message.offset;
-        
+
         // Copy the data
         memcpy(target, message.data, message.size);
-        
+
         // Invoke the callback if registered
         if (g_networkCallback) {
             g_networkCallback(message.memoryName, message.offset, message.size);
@@ -133,24 +138,24 @@ void applyUpdate(const SyncMessage& message) {
 
 void applyMultipartUpdate(uint64_t updateId) {
     lockUpdatesMutex();
-    
+
     // Get the chunks for this update
     std::map<uint64_t, UpdateInfo>::iterator it = g_inProgressUpdates.find(updateId);
     if (it != g_inProgressUpdates.end()) {
         std::vector<SyncMessage>& chunks = it->second.chunks;
-        
+
         // Sort chunks by offset
-        std::sort(chunks.begin(), chunks.end(), 
+        std::sort(chunks.begin(), chunks.end(),
                   [](const SyncMessage& a, const SyncMessage& b) {
                       return a.offset < b.offset;
                   });
-        
+
         // Apply each chunk
         for (size_t i = 0; i < chunks.size(); i++) {
             applyUpdate(chunks[i]);
         }
     }
-    
+
     unlockUpdatesMutex();
 }
 

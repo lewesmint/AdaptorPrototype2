@@ -8,9 +8,11 @@
  * remote nodes, and monitoring shared memory for changes.
  */
 
-#include <windows.h>
+// Make sure winsock2.h is included before windows.h to avoid conflicts
+#define WIN32_LEAN_AND_MEAN
 #include <winsock2.h>
 #include <ws2tcpip.h>
+#include <windows.h>
 #include "network_sync.h"
 #include "sync_message.h"
 #include "shared_memory.h"
