@@ -1,5 +1,4 @@
 // Make sure winsock2.h is included before windows.h to avoid conflicts
-#define WIN32_LEAN_AND_MEAN
 #include <winsock2.h>
 #include <windows.h>
 
@@ -8,10 +7,12 @@
 #include "network_sync.h"
 #include <iostream>
 #include <algorithm>
+#include <stdint.h>
+
 
 // Initialize global variables
 std::map<std::string, std::vector<MemoryChange> > g_pendingChanges;
-std::map<unsigned __int64, UpdateInfo> g_inProgressUpdates;
+std::map<uint64_t, UpdateInfo> g_inProgressUpdates;
 HANDLE g_changesMutex = NULL;
 HANDLE g_updatesMutex = NULL;
 
@@ -33,6 +34,36 @@ void initChangeTracking() {
 }
 
 void cleanupChangeTracking() {
+    // Clear the maps - be careful with locking to avoid deadlocks
+    // Only lock if the mutex exists
+    if (g_changesMutex) {
+        // Try to lock with a timeout to avoid deadlocks
+        DWORD waitResult = WaitForSingleObject(g_changesMutex, 1000); // 1 second timeout
+        if (waitResult == WAIT_OBJECT_0) {
+            // Successfully locked
+            g_pendingChanges.clear();
+            ReleaseMutex(g_changesMutex);
+        } else {
+            // Failed to lock, clear anyway (might be unsafe but we're shutting down)
+            std::cerr << "[CLEANUP] Failed to lock changes mutex, clearing anyway" << std::endl;
+            g_pendingChanges.clear();
+        }
+    }
+
+    if (g_updatesMutex) {
+        // Try to lock with a timeout to avoid deadlocks
+        DWORD waitResult = WaitForSingleObject(g_updatesMutex, 1000); // 1 second timeout
+        if (waitResult == WAIT_OBJECT_0) {
+            // Successfully locked
+            g_inProgressUpdates.clear();
+            ReleaseMutex(g_updatesMutex);
+        } else {
+            // Failed to lock, clear anyway (might be unsafe but we're shutting down)
+            std::cerr << "[CLEANUP] Failed to lock updates mutex, clearing anyway" << std::endl;
+            g_inProgressUpdates.clear();
+        }
+    }
+
     // Clean up mutexes
     if (g_changesMutex) {
         CloseHandle(g_changesMutex);
@@ -43,15 +74,6 @@ void cleanupChangeTracking() {
         CloseHandle(g_updatesMutex);
         g_updatesMutex = NULL;
     }
-
-    // Clear the maps
-    lockChangesMutex();
-    g_pendingChanges.clear();
-    unlockChangesMutex();
-
-    lockUpdatesMutex();
-    g_inProgressUpdates.clear();
-    unlockUpdatesMutex();
 }
 
 void markRegionChanged(const char* memoryName, size_t offset, size_t size) {

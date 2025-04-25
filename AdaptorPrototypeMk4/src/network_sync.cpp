@@ -9,7 +9,6 @@
  */
 
 // Make sure winsock2.h is included before windows.h to avoid conflicts
-#define WIN32_LEAN_AND_MEAN
 #include <winsock2.h>
 #include <ws2tcpip.h>
 #include <windows.h>
@@ -235,6 +234,25 @@ bool receiveSyncMessage(SOCKET sock, SyncMessage& message, std::string& sourceIp
     // Create a sockaddr_in structure to store the source address information
     sockaddr_in srcAddr;
     int addrLen = sizeof(srcAddr);
+
+    // Set up a timeout for the socket using select
+    fd_set readSet;
+    FD_ZERO(&readSet);
+    FD_SET(sock, &readSet);
+
+    // Set up a timeout of 100ms
+    timeval timeout;
+    timeout.tv_sec = 0;
+    timeout.tv_usec = 100000; // 100ms
+
+    // Wait for the socket to be ready for reading or timeout
+    int selectResult = select(0, &readSet, NULL, NULL, &timeout);
+
+    // Check if select timed out or failed
+    if (selectResult <= 0) {
+        // Timeout or error, not a failure, just no data available
+        return false;
+    }
 
     // Receive a message from the socket
     // We need to cast the message to a char* for the recvfrom() function
@@ -744,7 +762,15 @@ void shutdownNetworkSync() {
 
     // Step 2: Wait for the receive thread to finish and clean it up
     if (g_receiveThread) {
-        WaitForSingleObject(g_receiveThread, INFINITE);
+        // Wait for the thread to finish with a timeout
+        DWORD waitResult = WaitForSingleObject(g_receiveThread, 1000); // 1 second timeout
+
+        // If the thread didn't finish within the timeout, terminate it
+        if (waitResult == WAIT_TIMEOUT) {
+            std::cout << "[CLEANUP] Receive thread did not exit cleanly, terminating..." << std::endl;
+            TerminateThread(g_receiveThread, 0);
+        }
+
         CloseHandle(g_receiveThread);
         g_receiveThread = NULL;
     }
@@ -753,7 +779,15 @@ void shutdownNetworkSync() {
     lockSyncThreadsMutex();
     std::map<std::string, HANDLE>::iterator it;
     for (it = g_syncThreads.begin(); it != g_syncThreads.end(); ++it) {
-        WaitForSingleObject(it->second, INFINITE);
+        // Wait for the thread to finish with a timeout
+        DWORD waitResult = WaitForSingleObject(it->second, 1000); // 1 second timeout
+
+        // If the thread didn't finish within the timeout, terminate it
+        if (waitResult == WAIT_TIMEOUT) {
+            std::cout << "[CLEANUP] Sync thread did not exit cleanly, terminating..." << std::endl;
+            TerminateThread(it->second, 0);
+        }
+
         CloseHandle(it->second);
     }
     g_syncThreads.clear();

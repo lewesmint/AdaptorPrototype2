@@ -4,6 +4,7 @@
 #include <Windows.h>
 #include <string>
 #include <map>
+#include <stdint.h>
 
 // Function to create shared memory
 HANDLE CreateSharedMemory(const char* name, SIZE_T size);
