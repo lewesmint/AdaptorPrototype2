@@ -10,7 +10,8 @@ Config::Config()
 }
 
 bool Config::loadFromFile(const std::string& filePath) {
-    std::ifstream file(filePath);
+    // VS2010 compatible file opening (can't pass std::string directly to constructor)
+    std::ifstream file(filePath.c_str());
     if (!file.is_open()) {
         std::cerr << "[CONFIG] Failed to open config file: " << filePath << std::endl;
         return false;
@@ -55,16 +56,16 @@ bool Config::parseLine(const std::string& line) {
     if (key == "local_ip") {
         localIp = value;
     } else if (key == "local_port") {
-        try {
-            localPort = std::stoi(value);
-        } catch (const std::exception&) {
+        // VS2010 compatible conversion (no std::stoi)
+        std::istringstream ss(value);
+        if (!(ss >> localPort) || !ss.eof()) {
             std::cerr << "[CONFIG] Invalid local_port value: " << value << std::endl;
             return false;
         }
     } else if (key == "instance_id") {
-        try {
-            instanceId = std::stoi(value);
-        } catch (const std::exception&) {
+        // VS2010 compatible conversion (no std::stoi)
+        std::istringstream ss(value);
+        if (!(ss >> instanceId) || !ss.eof()) {
             std::cerr << "[CONFIG] Invalid instance_id value: " << value << std::endl;
             return false;
         }
@@ -93,12 +94,11 @@ bool Config::parseLine(const std::string& line) {
             return false;
         }
 
-        // Convert port and instance ID to integers
+        // Convert port and instance ID to integers (VS2010 compatible)
         int port, id;
-        try {
-            port = std::stoi(portStr);
-            id = std::stoi(idStr);
-        } catch (const std::exception&) {
+        std::istringstream portSS(portStr);
+        std::istringstream idSS(idStr);
+        if (!(portSS >> port) || !portSS.eof() || !(idSS >> id) || !idSS.eof()) {
             std::cerr << "[CONFIG] Invalid remote_node port or instance_id: " << value << std::endl;
             return false;
         }
@@ -131,8 +131,9 @@ std::string Config::toString() const {
     oss << "  Instance ID: " << instanceId << std::endl;
     oss << "  Remote Nodes:" << std::endl;
 
-    for (const auto& node : remoteNodes) {
-        oss << "    " << node.ip << ":" << node.port << ":" << node.instanceId << std::endl;
+    // VS2010 compatible loop (no range-based for loops)
+    for (std::vector<RemoteNode>::const_iterator it = remoteNodes.begin(); it != remoteNodes.end(); ++it) {
+        oss << "    " << it->ip << ":" << it->port << ":" << it->instanceId << std::endl;
     }
 
     return oss.str();

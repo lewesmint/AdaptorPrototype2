@@ -11,7 +11,7 @@
 
 // Initialize global variables
 std::map<std::string, std::vector<MemoryChange> > g_pendingChanges;
-std::map<uint64_t, UpdateInfo> g_inProgressUpdates;
+std::map<unsigned __int64, UpdateInfo> g_inProgressUpdates;
 HANDLE g_changesMutex = NULL;
 HANDLE g_updatesMutex = NULL;
 
